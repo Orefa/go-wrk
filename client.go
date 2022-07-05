@@ -56,7 +56,7 @@ func StartClient(url_, heads, requestBody string, meth string, dka bool, respons
 
 	hdrs, _ := buildHeaders(heads)
 
-	for {
+	for i := 0; i < tc; i++ {
 		requestBodyReader := strings.NewReader(requestBody)
 		req, _ := http.NewRequest(meth, url_, requestBodyReader)
 
@@ -96,9 +96,9 @@ func StartClient(url_, heads, requestBody string, meth string, dka bool, respons
 
 		respObj.Duration = timer.Duration()
 
-		if len(responseChan) >= tc {
-			break
-		}
+		// if len(responseChan) >= tc {
+		// 	break
+		// }
 		responseChan <- respObj
 	}
 }

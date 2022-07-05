@@ -5,14 +5,24 @@ import (
 )
 
 func SingleNode(toCall string) []byte {
-	responseChannel := make(chan *Response, *totalCalls*2)
+	responseChannel := make(chan *Response, *totalCalls)
 
 	benchTime := NewTimer()
 	benchTime.Reset()
 	//TODO check ulimit
 	wg := &sync.WaitGroup{}
-
-	for i := 0; i < *numConnections; i++ {
+	numPer := *totalCalls / *numConnections
+	left := *totalCalls % *numConnections
+	// numConnections > totalCalls
+	nuc := *numConnections
+	if numPer == 0 {
+		nuc = *totalCalls
+	}
+	for i := 0; i < nuc; i++ {
+		addNum := 0
+		if i < left {
+			addNum = 1
+		}
 		go StartClient(
 			toCall,
 			*headers,
@@ -21,8 +31,9 @@ func SingleNode(toCall string) []byte {
 			*disableKeepAlives,
 			responseChannel,
 			wg,
-			*totalCalls,
+			numPer+addNum,
 		)
+
 		wg.Add(1)
 	}
 
