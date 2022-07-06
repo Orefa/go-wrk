@@ -79,6 +79,7 @@ func StartClient(url_, heads, requestBody string, meth string, dka bool, respons
 				data, err := ioutil.ReadAll(resp.Body)
 				if err == nil {
 					respObj.Size = int64(len(data))
+					respObj.Body = string(data)
 				}
 			} else {
 				respObj.Size = resp.ContentLength

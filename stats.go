@@ -18,11 +18,16 @@ type Stats struct {
 	Times       []int
 	Transferred int64
 	Resp200     int64
+	RespSuccess int64
 	Resp300     int64
 	Resp400     int64
 	Resp500     int64
 	Errors      int64
 	Contains    int64
+}
+
+type ResponseDto struct {
+	Flag bool `json:"flag"`
 }
 
 func CalcStats(responseChannel chan *Response, duration int64) []byte {
@@ -47,6 +52,11 @@ func CalcStats(responseChannel chan *Response, duration int64) []byte {
 			// error
 		case res.StatusCode < 300:
 			stats.Resp200++
+			result := &ResponseDto{}
+			json.Unmarshal([]byte(res.Body), result)
+			if result.Flag {
+				stats.RespSuccess++
+			}
 		case res.StatusCode < 400:
 			stats.Resp300++
 		case res.StatusCode < 500:
@@ -128,19 +138,20 @@ func PrintStats(allStats *Stats) {
 	fmt.Printf("Used Threads:\t\t\t%d\n", allStats.Threads)
 	fmt.Printf("Total number of calls:\t\t%d\n\n", totalInt)
 	fmt.Println("===========================TIMINGS===========================")
-	fmt.Printf("Total time passed:\t\t%.2fs\n", allStats.AvgDuration/1E6)
+	fmt.Printf("Total time passed:\t\t%.2fs\n", allStats.AvgDuration/1e6)
 	fmt.Printf("Avg time per request:\t\t%.2fms\n", allStats.Sum/total/1000)
-	fmt.Printf("Requests per second:\t\t%.2f\n", total/(allStats.AvgDuration/1E6))
+	fmt.Printf("Requests per second:\t\t%.2f\n", total/(allStats.AvgDuration/1e6))
 	fmt.Printf("Median time per request:\t%.2fms\n", float64(allStats.Times[(totalInt-1)/2])/1000)
 	fmt.Printf("99th percentile time:\t\t%.2fms\n", float64(allStats.Times[(totalInt/100*99)])/1000)
 	fmt.Printf("Slowest time for request:\t%.2fms\n\n", float64(allStats.Times[totalInt-1]/1000))
 	fmt.Println("=============================DATA=============================")
 	fmt.Printf("Total response body sizes:\t\t%d\n", allStats.Transferred)
 	fmt.Printf("Avg response body per request:\t\t%.2f Byte\n", float64(allStats.Transferred)/total)
-	tr := float64(allStats.Transferred) / (allStats.AvgDuration / 1E6)
-	fmt.Printf("Transfer rate per second:\t\t%.2f Byte/s (%.2f MByte/s)\n", tr, tr/1E6)
+	tr := float64(allStats.Transferred) / (allStats.AvgDuration / 1e6)
+	fmt.Printf("Transfer rate per second:\t\t%.2f Byte/s (%.2f MByte/s)\n", tr, tr/1e6)
 	fmt.Println("==========================RESPONSES==========================")
 	fmt.Printf("20X Responses:\t\t%d\t(%.2f%%)\n", allStats.Resp200, float64(allStats.Resp200)/total*1e2)
+	fmt.Printf("      Success:\t\t%d\t(%.2f%%)\n", allStats.RespSuccess, float64(allStats.RespSuccess)/total*1e2)
 	fmt.Printf("30X Responses:\t\t%d\t(%.2f%%)\n", allStats.Resp300, float64(allStats.Resp300)/total*1e2)
 	fmt.Printf("40X Responses:\t\t%d\t(%.2f%%)\n", allStats.Resp400, float64(allStats.Resp400)/total*1e2)
 	fmt.Printf("50X Responses:\t\t%d\t(%.2f%%)\n", allStats.Resp500, float64(allStats.Resp500)/total*1e2)
